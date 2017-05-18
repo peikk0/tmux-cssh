@@ -33,7 +33,7 @@ while [ $# -ne 0 ]; do
             fi
             ssh_options="$1"; shift
             ;;
-        -h|--help)
+        -h)
             usage
             exit 0
             ;;
