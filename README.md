@@ -1,5 +1,9 @@
 # tmux-ssh
 
+Spawns multiple synchronized SSH sessions inside a tmux session.
+
+Think [Cluster SSH](https://github.com/duncs/clusterssh) except with only one terminal window and without the ugly Tk GUI.
+
 # Requirements
 
 - [tmux](https://tmux.github.io/)
@@ -29,3 +33,5 @@ Usage: ./tmux-cssh [-h] [-o <ssh args>] host [host ...]
 # License
 
 [MIT](LICENSE.md)
+
+Handmade with love in Wellington, New Zealand.
