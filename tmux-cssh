@@ -62,6 +62,8 @@ for host in ${hosts}; do
         tmux new-session -s "${tmux_session}" -d ssh ${ssh_options} ${host}
     else
         tmux split-window -t "${tmux_session}" -d ssh ${ssh_options} ${host}
+        # We have to reset the layout after each new pane otherwise the panes
+        # quickly become too small to spawn any more
         tmux select-layout -t "${tmux_session}" tiled
     fi
 done
