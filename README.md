@@ -1,4 +1,4 @@
-# tmux-ssh
+# tmux-cssh
 
 Spawns multiple synchronized SSH sessions inside a tmux session.
 
