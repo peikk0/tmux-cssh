@@ -6,7 +6,11 @@ hosts=""
 ssh_options=""
 
 usage() {
-    echo "Usage: $0 [-h] [-o <ssh args>] host [host ...]" >&2
+    echo "Usage: $0 [options] host [host ...]" >&2
+    echo "" >&2
+    echo "Spawns multiple synchronized SSH sessions inside a tmux session." >&2
+    echo "" >&2
+    echo "Options:" >&2
     echo "  -h                  Show help" >&2
     echo "  -o <ssh args>       Additional SSH arguments" >&2
 }
