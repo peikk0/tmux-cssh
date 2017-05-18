@@ -21,8 +21,13 @@ bind-key = set-window-option synchronize-panes
 
 ```
 % tmux-cssh -h
-Usage: ./tmux-cssh [-h] [-o <ssh args>] host [host ...]
+Usage: tmux-cssh [options] host [host ...]
+
+Spawns multiple synchronized SSH sessions inside a tmux session.
+
+Options:
   -h                  Show help
+  -n <name>           Name of the tmux session (default: cssh)
   -o <ssh args>       Additional SSH arguments
 
 % tmux-cssh web{1..4}
