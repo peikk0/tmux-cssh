@@ -40,9 +40,11 @@ if [ -z "${hosts}" ]; then
     exit 2
 fi
 
+# Find a name for a new session
 n=0; while tmux has-session -t "${TMUX_SESSION_NAME}-${n}" 2>/dev/null; do n=$(($n + 1)); done
 tmux_session="${TMUX_SESSION_NAME}-${n}"
 
+# Open a new session and split into new panes for each SSH session
 for host in ${hosts}; do
     if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
         tmux new-session -s "${tmux_session}" -d ssh ${ssh_options} ${host}
@@ -51,7 +53,16 @@ for host in ${hosts}; do
         tmux select-layout -t "${tmux_session}" tiled
     fi
 done
+
+# Synchronize panes by default
 tmux set-window-option -t "${tmux_session}" synchronize-panes on
-tmux attach-session -t "${tmux_session}"
+
+if [ -n "${TMUX}" ]; then
+    # We are in a tmux, just switch to the new session
+    tmux switch-client -t "${tmux_session}"
+else
+    # We are NOT in a tmux, attach to the new session
+    tmux attach-session -t "${tmux_session}"
+fi
 
 exit 0
