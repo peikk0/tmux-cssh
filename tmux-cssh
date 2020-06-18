@@ -46,7 +46,7 @@ while [ $# -ne 0 ]; do
             exit 2
             ;;
         *)
-            hosts="${hosts} $1"; shift
+            hosts="${hosts}${hosts:+ }$1"; shift
             ;;
     esac
 done
@@ -65,6 +65,21 @@ if [ -n "${tmux_attach_current_session}" ]; then
     n=0; while tmux list-windows -F "#W" | grep -q "${tmux_name}-${n}" 2>/dev/null; do n=$(($n + 1)); done
     tmux_window="${tmux_name}-${n}"
     tmux_window_options="-n ${tmux_window}"
+fi
+
+# If host doesn't look like a DNS name, it may be a CSSH cluster
+if ! echo "${hosts}" | grep -q '[. ]'; then
+    for cfg in ~/.clusterssh/clusters /etc/clusters; do
+        if [ -r "${cfg}" ]; then
+            h="$(sed -n < "${cfg}" "s/^$hosts //p")"
+            if [ -n "$h" ]; then
+                hosts="${h}"
+                break
+            fi
+        fi
+        # If there was no corresponding cluster name,
+        # just assume we have an unqualified domain name
+    done
 fi
 
 # Open a new session and split into new panes for each SSH session
