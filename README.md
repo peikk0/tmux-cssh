@@ -16,6 +16,7 @@ You might want to add a keybinding in your `.tmux.conf` for toggling panes synch
 ```
 bind-key = set-window-option synchronize-panes
 ```
+This example assigns the `=` key.
 
 # Usage
 
