@@ -1,0 +1,30 @@
+---
+stages:
+  - test
+
+include:
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+shellcheck:
+  stage: test
+  image: koalaman/shellcheck-alpine:v0.9.0
+  script:
+    - |
+      shellcheck tmux-cssh
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - tmux-cssh
+
+shfmt:
+  stage: test
+  image: mvdan/shfmt:v3.6.0-alpine
+  script:
+    - |
+      shfmt -d -l -i 2 -ci tmux-cssh
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - tmux-cssh
