@@ -3,6 +3,7 @@
 hosts=""
 ssh_options=""
 tmux_name="cssh"
+tmux_attach_current_session="false"
 
 usage() {
     echo "Usage: $0 [options] host [host ...]" >&2
@@ -60,7 +61,7 @@ fi
 n=0; while tmux has-session -t "${tmux_name}-${n}" 2>/dev/null; do n=$(($n + 1)); done
 tmux_session="${tmux_name}-${n}"
 
-if [ -n "${tmux_attach_current_session}" ]; then
+if [ "${tmux_attach_current_session}" = "true" ]; then
     tmux_session=$(tmux display-message -p '#S')
     n=0; while tmux list-windows -F "#W" | grep -q "${tmux_name}-${n}" 2>/dev/null; do n=$(($n + 1)); done
     tmux_window="${tmux_name}-${n}"
@@ -86,10 +87,17 @@ fi
 for host in ${hosts}; do
     if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
         tmux new-session -s "${tmux_session}" -d "ssh ${ssh_options} ${host}"
-    elif [ -n "${tmux_attach_current_session}" ] && ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
-        tmux new-window ${tmux_window_options} "ssh ${ssh_options} ${host}"
+    elif [ "${tmux_attach_current_session}" = "true" ]; then
+        if ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
+            tmux new-window ${tmux_window_options} "ssh ${ssh_options} ${host}"
+        else
+            tmux split-window -t "${tmux_window}" -d "ssh ${ssh_options} ${host}"
+            # We have to reset the layout after each new pane otherwise the panes
+            # quickly become too small to spawn any more
+            tmux select-layout -t "${tmux_session}" tiled
+        fi
     else
-        tmux split-window -t "${tmux_session}" -t ${tmux_window} -d "ssh ${ssh_options} ${host}"
+        tmux split-window -t "${tmux_session}" -d "ssh ${ssh_options} ${host}"
         # We have to reset the layout after each new pane otherwise the panes
         # quickly become too small to spawn any more
         tmux select-layout -t "${tmux_session}" tiled
@@ -97,7 +105,7 @@ for host in ${hosts}; do
 done
 
 # Synchronize panes by default
-if [ -n "${tmux_attach_current_session}" ]; then
+if [ "${tmux_attach_current_session}" = "true" ]; then
     tmux set-window-option -t "${tmux_window}" synchronize-panes on
 else
     tmux set-window-option -t "${tmux_session}" synchronize-panes on
