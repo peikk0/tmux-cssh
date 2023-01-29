@@ -6,117 +6,125 @@ tmux_name="cssh"
 tmux_attach_current_session="false"
 
 usage() {
-    echo "Usage: $0 [options] host [host ...]" >&2
-    echo "" >&2
-    echo "Spawns multiple synchronized SSH sessions inside a tmux session." >&2
-    echo "" >&2
-    echo "Options:" >&2
-    echo "  -h                  Show help" >&2
-    echo "  -c                  Use the current tmux session and just spawn a new window instead" >&2
-    echo "  -n <name>           Name of the tmux session or window (default: cssh)" >&2
-    echo "  -o <ssh args>       Additional SSH arguments" >&2
+  echo "Usage: $0 [options] host [host ...]" >&2
+  echo "" >&2
+  echo "Spawns multiple synchronized SSH sessions inside a tmux session." >&2
+  echo "" >&2
+  echo "Options:" >&2
+  echo "  -h                  Show help" >&2
+  echo "  -c                  Use the current tmux session and just spawn a new window instead" >&2
+  echo "  -n <name>           Name of the tmux session or window (default: cssh)" >&2
+  echo "  -o <ssh args>       Additional SSH arguments" >&2
 }
 
 while [ $# -ne 0 ]; do
-    case $1 in
-        -n)
-            shift;
-            if [ $# -eq 0 ]; then
-                usage
-                exit 2
-            fi
-            tmux_name="$1"; shift
-            ;;
-        -c)
-            tmux_attach_current_session="true"; shift
-            ;;
-        -o)
-            shift;
-            if [ $# -eq 0 ]; then
-                usage
-                exit 2
-            fi
-            ssh_options="$1"; shift
-            ;;
-        -h)
-            usage
-            exit 0
-            ;;
-        -*)
-            usage
-            exit 2
-            ;;
-        *)
-            hosts="${hosts}${hosts:+ }$1"; shift
-            ;;
-    esac
+  case $1 in
+    -n)
+      shift
+      if [ $# -eq 0 ]; then
+        usage
+        exit 2
+      fi
+      tmux_name="$1"
+      shift
+      ;;
+    -c)
+      tmux_attach_current_session="true"
+      shift
+      ;;
+    -o)
+      shift
+      if [ $# -eq 0 ]; then
+        usage
+        exit 2
+      fi
+      ssh_options="$1"
+      shift
+      ;;
+    -h)
+      usage
+      exit 0
+      ;;
+    -*)
+      usage
+      exit 2
+      ;;
+    *)
+      hosts="${hosts}${hosts:+ }$1"
+      shift
+      ;;
+  esac
 done
 
 if [ -z "${hosts}" ]; then
-    usage
-    exit 2
+  usage
+  exit 2
 fi
 
 # Find a name for a new session
-n=0; while tmux has-session -t "${tmux_name}-${n}" 2>/dev/null; do n=$(($n + 1)); done
+n=0
+while tmux has-session -t "${tmux_name}-${n}" 2>/dev/null; do n=$((n + 1)); done
 tmux_session="${tmux_name}-${n}"
 
 if [ "${tmux_attach_current_session}" = "true" ]; then
-    tmux_session=$(tmux display-message -p '#S')
-    n=0; while tmux list-windows -F "#W" | grep -q "${tmux_name}-${n}" 2>/dev/null; do n=$(($n + 1)); done
-    tmux_window="${tmux_name}-${n}"
-    tmux_window_options="-n ${tmux_window}"
+  tmux_session="$(tmux display-message -p '#S')"
+  # Find a name for a new window
+  n=0
+  while tmux list-windows -F "#W" | grep -q "${tmux_name}-${n}" 2>/dev/null; do n=$((n + 1)); done
+  tmux_window="${tmux_name}-${n}"
+  tmux_window_options="-n ${tmux_window}"
 fi
 
 # If host doesn't look like a DNS name, it may be a CSSH cluster
 if ! echo "${hosts}" | grep -q '[. ]'; then
-    for cfg in ~/.clusterssh/clusters /etc/clusters; do
-        if [ -r "${cfg}" ]; then
-            h="$(sed -n < "${cfg}" "s/^$hosts //p")"
-            if [ -n "$h" ]; then
-                hosts="${h}"
-                break
-            fi
-        fi
-        # If there was no corresponding cluster name,
-        # just assume we have an unqualified domain name
-    done
+  for cfg in "${HOME}/.clusterssh/clusters" /etc/clusters; do
+    if [ -r "${cfg}" ]; then
+      h="$(sed -n "s/^${hosts} //p" <"${cfg}")"
+      if [ -n "${h}" ]; then
+        hosts="${h}"
+        break
+      fi
+    fi
+    # If there was no corresponding cluster name,
+    # just assume we have an unqualified domain name
+  done
 fi
 
 # Open a new session and split into new panes for each SSH session
 for host in ${hosts}; do
-    if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
-        tmux new-session -s "${tmux_session}" -d "ssh ${ssh_options} ${host}"
-    elif [ "${tmux_attach_current_session}" = "true" ]; then
-        if ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
-            tmux new-window ${tmux_window_options} "ssh ${ssh_options} ${host}"
-        else
-            tmux split-window -t "${tmux_window}" -d "ssh ${ssh_options} ${host}"
-            # We have to reset the layout after each new pane otherwise the panes
-            # quickly become too small to spawn any more
-            tmux select-layout -t "${tmux_session}" tiled
-        fi
+  if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
+    tmux new-session -s "${tmux_session}" -d "ssh ${ssh_options} ${host}"
+  elif [ "${tmux_attach_current_session}" = "true" ]; then
+    if ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
+      # shellcheck disable=SC2086
+      tmux new-window ${tmux_window_options} "ssh ${ssh_options} ${host}"
     else
-        tmux split-window -t "${tmux_session}" -d "ssh ${ssh_options} ${host}"
-        # We have to reset the layout after each new pane otherwise the panes
-        # quickly become too small to spawn any more
-        tmux select-layout -t "${tmux_session}" tiled
+      tmux split-window -t "${tmux_window}" -d "ssh ${ssh_options} ${host}"
+      # We have to reset the layout after each new pane otherwise the panes
+      # quickly become too small to spawn any more
+      tmux select-layout -t "${tmux_session}" tiled
     fi
+  else
+    tmux split-window -t "${tmux_session}" -d "ssh ${ssh_options} ${host}"
+    # We have to reset the layout after each new pane otherwise the panes
+    # quickly become too small to spawn any more
+    tmux select-layout -t "${tmux_session}" tiled
+  fi
 done
 
 # Synchronize panes by default
 if [ "${tmux_attach_current_session}" = "true" ]; then
-    tmux set-window-option -t "${tmux_window}" synchronize-panes on
+  tmux set-window-option -t "${tmux_window}" synchronize-panes on
 else
-    tmux set-window-option -t "${tmux_session}" synchronize-panes on
+  tmux set-window-option -t "${tmux_session}" synchronize-panes on
 fi
 
 if [ -n "${TMUX}" ]; then
-    # We are in a tmux, just switch to the new session
-    tmux switch-client -t "${tmux_session}"
+  # We are in a tmux, just switch to the new session
+  tmux switch-client -t "${tmux_session}"
 else
-    # We are NOT in a tmux, attach to the new session
-    tmux attach-session -t "${tmux_session}"
+  # We are NOT in a tmux, attach to the new session
+  tmux attach-session -t "${tmux_session}"
 fi
 
 exit 0
