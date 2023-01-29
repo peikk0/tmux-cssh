@@ -37,6 +37,10 @@ Options:
 % tmux-cssh -o '-p 2222 -l my_user' web{1..4}
 ```
 
+# Contributing
+
+Please open issues and submit merge requests in [GitLab](https://gitlab.com/peikk0/tmux-cssh).
+
 # License
 
 [MIT](LICENSE.md)
