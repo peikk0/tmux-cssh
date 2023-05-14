@@ -4,5 +4,9 @@
     ":disableRateLimiting"
   ],
   "assignAutomerge": true,
-  "assignees": ["peikk0"]
+  "assignees": ["peikk0"],
+  "labels": [
+    "dependencies"
+  ],
+  "semanticCommits": "enabled"
 }
