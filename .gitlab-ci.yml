@@ -22,7 +22,7 @@ shellcheck:
 
 shfmt:
   stage: test
-  image: mvdan/shfmt:v3.6.0-alpine
+  image: mvdan/shfmt:v3.7.0-alpine
   script:
     - |
       shfmt -d -l -i 2 -ci tmux-cssh
