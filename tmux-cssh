@@ -93,30 +93,33 @@ fi
 # Open a new session and split into new panes for each SSH session
 for host in ${hosts}; do
   if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
-    tmux new-session -s "${tmux_session}" -d "ssh ${ssh_options} ${host}"
+    pane=$(tmux new-session -P -F "#D" -s "${tmux_session}" -d "ssh ${ssh_options} ${host}")
   elif [ "${tmux_attach_current_session}" = "true" ]; then
     if ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
       # shellcheck disable=SC2086
       tmux new-window ${tmux_window_options} "ssh ${ssh_options} ${host}"
     else
-      tmux split-window -t "${tmux_window}" -d "ssh ${ssh_options} ${host}"
+      pane=$(tmux split-window -P -F "#D" -t "${tmux_window}" -d "ssh ${ssh_options} ${host}")
       # We have to reset the layout after each new pane otherwise the panes
       # quickly become too small to spawn any more
       tmux select-layout -t "${tmux_session}" tiled
     fi
   else
-    tmux split-window -t "${tmux_session}" -d "ssh ${ssh_options} ${host}"
+    pane=$(tmux split-window -P -F "#D" -t "${tmux_session}" -d "ssh ${ssh_options} ${host}")
     # We have to reset the layout after each new pane otherwise the panes
     # quickly become too small to spawn any more
     tmux select-layout -t "${tmux_session}" tiled
   fi
+  tmux set-option -p -t "${pane}" pane-border-format "${host}"
 done
 
-# Synchronize panes by default
+# Synchronize panes by default. Show hostnames.
 if [ "${tmux_attach_current_session}" = "true" ]; then
   tmux set-window-option -t "${tmux_window}" synchronize-panes on
+  tmux set-window-option -t "${tmux_window}" pane-border-status top
 else
   tmux set-window-option -t "${tmux_session}" synchronize-panes on
+  tmux set-window-option -t "${tmux_session}" pane-border-status top
 fi
 
 if [ -n "${TMUX}" ]; then
