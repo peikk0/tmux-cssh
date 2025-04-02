@@ -1,6 +1,7 @@
 #!/bin/sh
 
 hosts=""
+ssh_cmd="ssh"
 ssh_options=""
 tmux_name="cssh"
 tmux_attach_current_session="false"
@@ -14,6 +15,7 @@ usage() {
   echo "  -h                  Show help" >&2
   echo "  -c                  Use the current tmux session and just spawn a new window instead" >&2
   echo "  -n <name>           Name of the tmux session or window (default: cssh)" >&2
+	echo "  -s <ssh>            Command to use instead of ssh (e.g. ssh-copy-id)" >&2
   echo "  -o <ssh args>       Additional SSH arguments" >&2
 }
 
@@ -30,6 +32,15 @@ while [ $# -ne 0 ]; do
       ;;
     -c)
       tmux_attach_current_session="true"
+      shift
+      ;;
+    -s)
+      shift
+      if [ $# -eq 0 ]; then
+        usage
+        exit 2
+      fi
+      ssh_cmd="$1"
       shift
       ;;
     -o)
@@ -93,19 +104,19 @@ fi
 # Open a new session and split into new panes for each SSH session
 for host in ${hosts}; do
   if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
-    tmux new-session -s "${tmux_session}" -d "ssh ${ssh_options} ${host}"
+    tmux new-session -s "${tmux_session}" -d "${ssh_cmd} ${ssh_options} ${host}"
   elif [ "${tmux_attach_current_session}" = "true" ]; then
     if ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
       # shellcheck disable=SC2086
-      tmux new-window ${tmux_window_options} "ssh ${ssh_options} ${host}"
+      tmux new-window ${tmux_window_options} "${ssh_cmd} ${ssh_options} ${host}"
     else
-      tmux split-window -t "${tmux_window}" -d "ssh ${ssh_options} ${host}"
+      tmux split-window -t "${tmux_window}" -d "${ssh_cmd} ${ssh_options} ${host}"
       # We have to reset the layout after each new pane otherwise the panes
       # quickly become too small to spawn any more
       tmux select-layout -t "${tmux_session}" tiled
     fi
   else
-    tmux split-window -t "${tmux_session}" -d "ssh ${ssh_options} ${host}"
+    tmux split-window -t "${tmux_session}" -d "${ssh_cmd} ${ssh_options} ${host}"
     # We have to reset the layout after each new pane otherwise the panes
     # quickly become too small to spawn any more
     tmux select-layout -t "${tmux_session}" tiled
