@@ -10,7 +10,7 @@ stages:
 
 shellcheck:
   stage: test
-  image: koalaman/shellcheck-alpine:v0.10.0
+  image: koalaman/shellcheck-alpine:v0.11.0
   script:
     - |
       shellcheck tmux-cssh
