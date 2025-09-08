@@ -132,6 +132,7 @@ fi
 
 if [ -n "${TMUX}" ]; then
   # We are in a tmux, just switch to the new session
+  tmux set-option -t "${tmux_session}" detach-on-destroy no-detached
   tmux switch-client -t "${tmux_session}"
 else
   # We are NOT in a tmux, attach to the new session
