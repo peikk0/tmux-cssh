@@ -6,7 +6,7 @@ Think [Cluster SSH](https://github.com/duncs/clusterssh) except with only one te
 
 # Requirements
 
-- [tmux](https://tmux.github.io/) >=1.1
+- [tmux](https://tmux.github.io/) >=3.3
 
 # Installation
 
