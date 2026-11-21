@@ -144,8 +144,13 @@ else
 fi
 
 if [ -n "${TMUX}" ]; then
+  # Don't detach the client when the new session ends. Skip this with -c,
+  # where the session is the user's own and must not be modified.
+  if [ "${tmux_attach_current_session}" != "true" ]; then
+    tmux set-option -t "${tmux_session}" detach-on-destroy no-detached
+  fi
+
   # We are in a tmux, just switch to the new session
-  tmux set-option -t "${tmux_session}" detach-on-destroy no-detached
   tmux switch-client -t "${tmux_session}"
 else
   # We are NOT in a tmux, attach to the new session
