@@ -108,7 +108,7 @@ for host in ${hosts}; do
   elif [ "${tmux_attach_current_session}" = "true" ]; then
     if ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
       # shellcheck disable=SC2086
-      tmux new-window ${tmux_window_options} "${ssh_cmd} ${ssh_options} ${host}"
+      pane=$(tmux new-window -P -F "#D" ${tmux_window_options} "${ssh_cmd} ${ssh_options} ${host}")
     else
       pane=$(tmux split-window -P -F "#D" -t "${tmux_window}" -d "${ssh_cmd} ${ssh_options} ${host}")
       # We have to reset the layout after each new pane otherwise the panes
@@ -121,7 +121,9 @@ for host in ${hosts}; do
     # quickly become too small to spawn any more
     tmux select-layout -t "${tmux_session}" tiled
   fi
-  tmux set-option -p -t "${pane}" pane-border-format "${host}"
+  # Escape '#' so tmux does not treat it as a format sequence
+  label="$(printf '%s' "${host}" | sed 's/#/##/g')"
+  tmux set-option -p -t "${pane}" pane-border-format "${label}"
 done
 
 # Synchronize panes by default. Show hostnames.
